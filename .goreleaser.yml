@@ -30,6 +30,7 @@ archive:
   - README*
   - changelog*
   - CHANGELOG*
+  - config.json
 fpm:
   bindir: /usr/local/bin
 snapshot:

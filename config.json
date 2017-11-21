@@ -1,0 +1,12 @@
+{
+	"mappings": [
+		{
+			"journalTitle":"Technology Innovation Management Review",
+			"prefix": "10.11574/timreview" 
+		},
+		{
+			"journalTitle":"Open Source Business Resource",
+			"prefix": "10.11574/osbr" 
+		}
+	]
+}
