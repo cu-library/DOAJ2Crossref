@@ -6,18 +6,24 @@ import (
 	"path/filepath"
 )
 
-type mappingFromConfig struct {
+type MappingFromConfig struct {
 	Mappings []struct {
 		JournalTitle string `json:"journalTitle"`
 		Prefix       string `json:"prefix"`
+		AbbreviatedJournalTitle string `json:"abbreviatedJournalTitle"`
 	} `json:"mappings"`
 }
 
-// LoadMappingConfig returns a pointer to a MappingConfig loaded with mappings from the config file.
-func LoadMappingConfig(configFilePath string) (map[string]string, error) {
+type PrefixAndAbbreviation struct {
+	Prefix string
+	Abbreviation string
+}
 
-	config := new(mappingFromConfig)
-	mapping := make(map[string]string)
+// LoadMappingConfig returns a pointer to a MappingConfig loaded with mappings from the config file.
+func LoadMappingConfig(configFilePath string) (map[string]PrefixAndAbbreviation, error) {
+
+	config := new(MappingFromConfig)
+	mapping := make(map[string]PrefixAndAbbreviation)
 
 	absoluteConfigFilePath, err := filepath.Abs(configFilePath)
 
@@ -34,7 +40,7 @@ func LoadMappingConfig(configFilePath string) (map[string]string, error) {
 	}
 
 	for _, configMapping := range config.Mappings {
-		mapping[configMapping.JournalTitle] = configMapping.Prefix
+		mapping[configMapping.JournalTitle] = PrefixAndAbbreviation{configMapping.Prefix, configMapping.AbbreviatedJournalTitle}
 	}
 
 	return mapping, nil
