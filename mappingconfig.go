@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 )
 
+// MappingFromConfig holds data from the json config file.
 type MappingFromConfig struct {
 	Mappings []struct {
 		JournalTitle            string `json:"journalTitle"`
@@ -14,6 +15,7 @@ type MappingFromConfig struct {
 	} `json:"mappings"`
 }
 
+// PrefixAndAbbreviation is a tuple which holds a prefix and an abbreviation for a journal title.
 type PrefixAndAbbreviation struct {
 	Prefix       string
 	Abbreviation string

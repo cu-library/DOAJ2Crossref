@@ -11,11 +11,13 @@ import (
 	"time"
 )
 
+// TemplateData contains the data to use when creating the template
 type TemplateData struct {
 	HeadData
 	BodyData
 }
 
+// HeadData contains the data to use in the header of the template
 type HeadData struct {
 	DOIBatch       int64
 	Timestamp      int64
@@ -24,10 +26,12 @@ type HeadData struct {
 	Registrant     string
 }
 
+// BodyData contains the data to use in the body of the template
 type BodyData struct {
 	Journals []*Journal
 }
 
+// Journal contains data for each journal issue
 type Journal struct {
 	LanguageCode     string
 	FullTitle        string
@@ -39,11 +43,13 @@ type Journal struct {
 	Articles         []Article
 }
 
+// ISSN contains data about ISSNs.
 type ISSN struct {
 	Value string
 	Type  string
 }
 
+// PublicationDate is the publication date of a journal/article.
 type PublicationDate struct {
 	Year  string
 	Month string
@@ -51,6 +57,7 @@ type PublicationDate struct {
 	Type  string
 }
 
+// Article contains data about each article.
 type Article struct {
 	Title            string
 	Contributors     []Contributor
@@ -61,12 +68,14 @@ type Article struct {
 	LastPage         string
 }
 
+// Contributor contains data about each author.
 type Contributor struct {
 	GivenName   string
 	Surname     string
 	Affiliation string
 }
 
+// CreateTemplateData returns a pointer to a 'fully hydrated' TemplateData struct.
 func CreateTemplateData(depositorName, depositorEmail, registrant string, mapping map[string]PrefixAndAbbreviation, records *DOAJRecords) *TemplateData {
 
 	templateData := new(TemplateData)
@@ -87,63 +96,7 @@ func CreateTemplateData(depositorName, depositorEmail, registrant string, mappin
 	return templateData
 }
 
-func (j *Journal) AddArticle(mapping map[string]PrefixAndAbbreviation, record *DOAJRecord) {
-
-	fulltextUrl, err := url.Parse(record.DOAJFullTextUrl.Text)
-	if err != nil {
-		log.Fatalln("Unable to parse full text url", err)
-	}
-
-	doi := mapping[j.FullTitle].Prefix + path.Base(fulltextUrl.Path)
-
-	j.Articles = append(j.Articles, Article{
-		Title:            record.DOAJTitle.Text,
-		URI:              record.DOAJFullTextUrl.Text,
-		FirstPage:        record.DOAJStartPage.Text,
-		LastPage:         record.DOAJEndPage.Text,
-		DOI:              doi,
-		PublicationDates: j.PublicationDates,
-		Contributors:     CreateContributors(record),
-	})
-}
-
-func CreateContributors(record *DOAJRecord) []Contributor {
-
-	idToAffiliation := make(map[int8]string)
-	contributors := []Contributor{}
-
-	for _, affiliation := range record.DOAJAffiliationsList.DOAJAffiliationName {
-		idToAffiliation[affiliation.AttrAffiliationId] = strings.TrimSpace(affiliation.Text)
-	}
-
-	for _, contributor := range record.DOAJAuthors.DOAJAuthor {
-
-		log.Println(contributor.DOAJName.Text)
-
-		var c Contributor
-
-		if len(strings.SplitN(contributor.DOAJName.Text, " ", 2)) == 1 {
-			c = Contributor{
-				Surname: contributor.DOAJName.Text,
-			}
-		} else {
-			c = Contributor{
-				GivenName: strings.SplitN(contributor.DOAJName.Text, " ", 2)[0],
-				Surname:   strings.SplitN(contributor.DOAJName.Text, " ", 2)[1],
-			}
-		}
-
-		if contributor.DOAJAffiliationId != nil {
-			c.Affiliation = idToAffiliation[contributor.DOAJAffiliationId.Text]
-		}
-
-		contributors = append(contributors, c)
-	}
-
-	return contributors
-
-}
-
+// GetOrCreateJournal returns a pointer to an existing or newly added journal.
 func GetOrCreateJournal(bodyData *BodyData, mapping map[string]PrefixAndAbbreviation, record *DOAJRecord) *Journal {
 
 	for i := range bodyData.Journals {
@@ -172,17 +125,19 @@ func GetOrCreateJournal(bodyData *BodyData, mapping map[string]PrefixAndAbbrevia
 	return journal
 }
 
+// CreateISSNs returns a slice of ISSNs.
 func CreateISSNs(record *DOAJRecord) []ISSN {
 	return []ISSN{
 		ISSN{record.DOAJIssn.Text, "electronic"},
 	}
 }
 
+// CreatePublicationDates returns a slice of Publication Dates. The dates are parsed to ensure they're OK.
 func CreatePublicationDates(record *DOAJRecord) []PublicationDate {
 
 	t, err := time.Parse("2006-01-02", record.DOAJPublicationDate.Text)
 	if err != nil {
-		log.Fatalln("Unable to process date", err)
+		log.Fatalln("Unable to process date", record.DOAJPublicationDate.Text, err)
 	}
 
 	return []PublicationDate{
@@ -190,6 +145,64 @@ func CreatePublicationDates(record *DOAJRecord) []PublicationDate {
 	}
 }
 
+// AddArticle adds an article's metadata from the record to a journal.
+func (j *Journal) AddArticle(mapping map[string]PrefixAndAbbreviation, record *DOAJRecord) {
+
+	fulltextURL, err := url.Parse(record.DOAJFullTextURL.Text)
+	if err != nil {
+		log.Fatalln("Unable to parse full text url", fulltextURL, err)
+	}
+
+	doi := mapping[j.FullTitle].Prefix + path.Base(fulltextURL.Path)
+
+	j.Articles = append(j.Articles, Article{
+		Title:            record.DOAJTitle.Text,
+		URI:              record.DOAJFullTextURL.Text,
+		FirstPage:        record.DOAJStartPage.Text,
+		LastPage:         record.DOAJEndPage.Text,
+		DOI:              doi,
+		PublicationDates: j.PublicationDates,
+		Contributors:     CreateContributors(record),
+	})
+}
+
+// CreateContributors creates a slice of contributors. Mononymous people only set the surname.
+func CreateContributors(record *DOAJRecord) []Contributor {
+
+	idToAffiliation := make(map[int8]string)
+	contributors := []Contributor{}
+
+	for _, affiliation := range record.DOAJAffiliationsList.DOAJAffiliationName {
+		idToAffiliation[affiliation.AttrAffiliationID] = strings.TrimSpace(affiliation.Text)
+	}
+
+	for _, contributor := range record.DOAJAuthors.DOAJAuthor {
+
+		var c Contributor
+
+		if len(strings.SplitN(contributor.DOAJName.Text, " ", 2)) == 1 {
+			c = Contributor{
+				Surname: contributor.DOAJName.Text,
+			}
+		} else {
+			c = Contributor{
+				GivenName: strings.SplitN(contributor.DOAJName.Text, " ", 2)[0],
+				Surname:   strings.SplitN(contributor.DOAJName.Text, " ", 2)[1],
+			}
+		}
+
+		if contributor.DOAJAffiliationID != nil {
+			c.Affiliation = idToAffiliation[contributor.DOAJAffiliationID.Text]
+		}
+
+		contributors = append(contributors, c)
+	}
+
+	return contributors
+
+}
+
+// ISO6392toISO6391 flips the language encoding used in DOAJ to the one used in Crossref.
 func ISO6392toISO6391(code string) string {
 	switch code {
 	case "aar":
