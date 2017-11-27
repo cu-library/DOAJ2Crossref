@@ -1,4 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
+package main
+
+const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 <doi_batch version="4.4.1" 
            xmlns="http://www.crossref.org/schema/4.4.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
@@ -19,7 +21,7 @@
 		<journal>
 			<journal_metadata language="{{.LanguageCode}}">
 				<full_title>{{.FullTitle}}</full_title>
-				<abbrev_title>{{.AbbrevTitle}}</abbrev_title>
+				{{if .AbbrevTitle}}<abbrev_title>{{.AbbrevTitle}}</abbrev_title>{{end}}
 				{{- range .ISSNs}}
 				<issn media_type="{{.Type}}">{{.Value}}</issn>
 				{{- end}}
@@ -28,8 +30,6 @@
 				{{- range .PublicationDates}}
 				<publication_date media_type="{{.Type}}">
 					<year>{{.Year}}</year>
-					<month>{{.Month}}</month>
-					<day>{{.Day}}</day>
 				</publication_date>
 				{{- end}}
 				<journal_volume>
@@ -72,4 +72,5 @@
 		{{- end}}		
 	</body>
 </doi_batch>
+`
 

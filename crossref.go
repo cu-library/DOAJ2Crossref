@@ -141,7 +141,7 @@ func CreatePublicationDates(record *DOAJRecord) []PublicationDate {
 	}
 
 	return []PublicationDate{
-		PublicationDate{strconv.Itoa(t.Year()), strconv.Itoa(int(t.Month())), strconv.Itoa(t.Day()), "electronic"},
+		PublicationDate{strconv.Itoa(t.Year()), strconv.Itoa(int(t.Month())), strconv.Itoa(t.Day()), "online"},
 	}
 }
 
@@ -153,7 +153,12 @@ func (j *Journal) AddArticle(mapping map[string]PrefixAndAbbreviation, record *D
 		log.Fatalln("Unable to parse full text url", fulltextURL, err)
 	}
 
-	doi := mapping[j.FullTitle].Prefix + path.Base(fulltextURL.Path)
+	prefix := mapping[j.FullTitle].Prefix
+	if prefix == "" {
+		log.Fatalf("Unable to find prefix for journal title \"%v\", maybe missing data at for article with url \"%v\".\n", j.FullTitle, record.DOAJFullTextURL.Text)
+	}
+
+	doi := prefix + path.Base(fulltextURL.Path)
 
 	j.Articles = append(j.Articles, Article{
 		Title:            record.DOAJTitle.Text,
