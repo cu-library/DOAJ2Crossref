@@ -21,7 +21,9 @@ const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 		<journal>
 			<journal_metadata language="{{.LanguageCode}}">
 				<full_title>{{.FullTitle}}</full_title>
-				{{if .AbbrevTitle}}<abbrev_title>{{.AbbrevTitle}}</abbrev_title>{{end}}
+				{{- if .AbbrevTitle}}
+				<abbrev_title>{{.AbbrevTitle}}</abbrev_title>
+				{{end}}
 				{{- range .ISSNs}}
 				<issn media_type="{{.Type}}">{{.Value}}</issn>
 				{{- end}}
@@ -29,6 +31,8 @@ const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 			<journal_issue>
 				{{- range .PublicationDates}}
 				<publication_date media_type="{{.Type}}">
+					<month>{{.Month}}</month>
+					<day>{{.Day}}</day>
 					<year>{{.Year}}</year>
 				</publication_date>
 				{{- end}}
@@ -42,25 +46,29 @@ const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 				<titles>
 					<title>{{.Title}}</title>
 				</titles>
-				{{- range .Contributors}}
 				<contributors>
-					<person_name>
+				{{- range .Contributors}}				
+					<person_name sequence="{{.Sequence}}" contributor_role="{{.Role}}">
+						{{- if .GivenName}}
 						<given_name>{{.GivenName}}</given_name>
+						{{end -}}
 						<surname>{{.Surname}}</surname>
-						<affiliation>{{.Affiliation}}</affiliation>
+						{{- if .Affiliation}}
+						<affiliation>{{.Affiliation}}</affiliation>{{end}}						
 					</person_name>
-				</contributors>
 				{{- end}}
+				</contributors>
 				{{- range .PublicationDates}}
 				<publication_date media_type="{{.Type}}">
-					<year>{{.Year}}</year>
 					<month>{{.Month}}</month>
 					<day>{{.Day}}</day>
+					<year>{{.Year}}</year>
 				</publication_date>
 				{{- end}}
 				<pages>
 					<first_page>{{.FirstPage}}</first_page>
-					<last_page>{{.LastPage}}</last_page>
+					{{- if .LastPage}}
+					<last_page>{{.LastPage}}</last_page>{{end}}
 				</pages>
 				<doi_data>
 					<doi>{{.DOI}}</doi>
@@ -73,4 +81,3 @@ const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 	</body>
 </doi_batch>
 `
-

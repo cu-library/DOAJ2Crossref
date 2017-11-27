@@ -1,11 +1,11 @@
 package main
 
 import (
+	"encoding/csv"
 	"flag"
 	"log"
 	"os"
 	"text/template"
-	"encoding/csv"
 )
 
 var configFilePath = flag.String("config", "config.json", "Path to config file.")

@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"fmt"
+	"encoding/xml"
+	"bytes"
 )
 
 // TemplateData contains the data to use when creating the template
@@ -73,6 +76,8 @@ type Contributor struct {
 	GivenName   string
 	Surname     string
 	Affiliation string
+	Sequence    string
+	Role        string
 }
 
 // CreateTemplateData returns a pointer to a 'fully hydrated' TemplateData struct.
@@ -141,7 +146,12 @@ func CreatePublicationDates(record *DOAJRecord) []PublicationDate {
 	}
 
 	return []PublicationDate{
-		PublicationDate{strconv.Itoa(t.Year()), strconv.Itoa(int(t.Month())), strconv.Itoa(t.Day()), "online"},
+		PublicationDate{
+			strconv.Itoa(t.Year()), 
+			fmt.Sprintf("%02d", int(t.Month())), 
+			fmt.Sprintf("%02d", t.Day()), 
+			"online",
+		},
 	}
 }
 
@@ -160,15 +170,29 @@ func (j *Journal) AddArticle(mapping map[string]PrefixAndAbbreviation, record *D
 
 	doi := prefix + path.Base(fulltextURL.Path)
 
+	firstPage := record.DOAJStartPage.Text
+	if record.DOAJStartPage.Text == "" {
+		firstPage = "1"
+	}
+
 	j.Articles = append(j.Articles, Article{
-		Title:            record.DOAJTitle.Text,
+		Title:            escapeXML(record.DOAJTitle.Text),
 		URI:              record.DOAJFullTextURL.Text,
-		FirstPage:        record.DOAJStartPage.Text,
+		FirstPage:        firstPage,
 		LastPage:         record.DOAJEndPage.Text,
 		DOI:              doi,
 		PublicationDates: j.PublicationDates,
 		Contributors:     CreateContributors(record),
 	})
+}
+
+func escapeXML(s string) string{
+	escaped := new(bytes.Buffer)
+	err := xml.EscapeText(escaped, []byte(s))
+	if err != nil {
+		log.Fatalln("Unable to escape the article title", err)
+	}
+	return escaped.String()
 }
 
 // CreateContributors creates a slice of contributors. Mononymous people only set the surname.
@@ -181,23 +205,29 @@ func CreateContributors(record *DOAJRecord) []Contributor {
 		idToAffiliation[affiliation.AttrAffiliationID] = strings.TrimSpace(affiliation.Text)
 	}
 
-	for _, contributor := range record.DOAJAuthors.DOAJAuthor {
+	if len(record.DOAJAuthors.DOAJAuthor) == 0 {
+		log.Fatalln("No authors:", record.DOAJFullTextURL.Text)
+	}
 
-		var c Contributor
+	for i, contributor := range record.DOAJAuthors.DOAJAuthor {
+
+		c := Contributor{Role: "author"}
 
 		if len(strings.SplitN(contributor.DOAJName.Text, " ", 2)) == 1 {
-			c = Contributor{
-				Surname: contributor.DOAJName.Text,
-			}
+			c.Surname = contributor.DOAJName.Text
 		} else {
-			c = Contributor{
-				GivenName: strings.SplitN(contributor.DOAJName.Text, " ", 2)[0],
-				Surname:   strings.SplitN(contributor.DOAJName.Text, " ", 2)[1],
-			}
+			c.GivenName = strings.SplitN(contributor.DOAJName.Text, " ", 2)[0]
+			c.Surname = strings.SplitN(contributor.DOAJName.Text, " ", 2)[1]
 		}
 
 		if contributor.DOAJAffiliationID != nil {
-			c.Affiliation = idToAffiliation[contributor.DOAJAffiliationID.Text]
+			c.Affiliation = escapeXML(idToAffiliation[contributor.DOAJAffiliationID.Text])
+		}
+
+		if i == 0 {
+			c.Sequence = "first"
+		} else {
+			c.Sequence = "additional"
 		}
 
 		contributors = append(contributors, c)
