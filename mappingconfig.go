@@ -8,14 +8,14 @@ import (
 
 type MappingFromConfig struct {
 	Mappings []struct {
-		JournalTitle string `json:"journalTitle"`
-		Prefix       string `json:"prefix"`
+		JournalTitle            string `json:"journalTitle"`
+		Prefix                  string `json:"prefix"`
 		AbbreviatedJournalTitle string `json:"abbreviatedJournalTitle"`
 	} `json:"mappings"`
 }
 
 type PrefixAndAbbreviation struct {
-	Prefix string
+	Prefix       string
 	Abbreviation string
 }
 

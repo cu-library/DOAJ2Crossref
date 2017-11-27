@@ -3,12 +3,12 @@
 package main
 
 import (
-	"time"
 	"log"
-	"strconv"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type TemplateData struct {
@@ -25,45 +25,45 @@ type HeadData struct {
 }
 
 type BodyData struct {
-	Journals []*Journal 
+	Journals []*Journal
 }
 
 type Journal struct {
-	LanguageCode string
-	FullTitle string
-	AbbrevTitle string
-	ISSNs []ISSN
+	LanguageCode     string
+	FullTitle        string
+	AbbrevTitle      string
+	ISSNs            []ISSN
 	PublicationDates []PublicationDate
-	Volume string
-	Issue string
-	Articles []Article
+	Volume           string
+	Issue            string
+	Articles         []Article
 }
 
 type ISSN struct {
 	Value string
-	Type string
+	Type  string
 }
 
 type PublicationDate struct {
-	Year string
+	Year  string
 	Month string
-	Day string
-	Type string
+	Day   string
+	Type  string
 }
 
 type Article struct {
-	Title string
-	Contributors []Contributor
+	Title            string
+	Contributors     []Contributor
 	PublicationDates []PublicationDate
-	DOI string
-	URI string
-	FirstPage string
-	LastPage string
+	DOI              string
+	URI              string
+	FirstPage        string
+	LastPage         string
 }
 
 type Contributor struct {
-	GivenName string
-	Surname string
+	GivenName   string
+	Surname     string
 	Affiliation string
 }
 
@@ -90,20 +90,20 @@ func CreateTemplateData(depositorName, depositorEmail, registrant string, mappin
 func (j *Journal) AddArticle(mapping map[string]PrefixAndAbbreviation, record *DOAJRecord) {
 
 	fulltextUrl, err := url.Parse(record.DOAJFullTextUrl.Text)
-	if err != nil{
+	if err != nil {
 		log.Fatalln("Unable to parse full text url", err)
 	}
 
 	doi := mapping[j.FullTitle].Prefix + path.Base(fulltextUrl.Path)
 
 	j.Articles = append(j.Articles, Article{
-		Title: record.DOAJTitle.Text,
-		URI: record.DOAJFullTextUrl.Text,
-		FirstPage: record.DOAJStartPage.Text,
-		LastPage: record.DOAJEndPage.Text,
-		DOI: doi,
+		Title:            record.DOAJTitle.Text,
+		URI:              record.DOAJFullTextUrl.Text,
+		FirstPage:        record.DOAJStartPage.Text,
+		LastPage:         record.DOAJEndPage.Text,
+		DOI:              doi,
 		PublicationDates: j.PublicationDates,
-		Contributors: CreateContributors(record),
+		Contributors:     CreateContributors(record),
 	})
 }
 
@@ -129,7 +129,7 @@ func CreateContributors(record *DOAJRecord) []Contributor {
 		} else {
 			c = Contributor{
 				GivenName: strings.SplitN(contributor.DOAJName.Text, " ", 2)[0],
-				Surname: strings.SplitN(contributor.DOAJName.Text, " ", 2)[1],
+				Surname:   strings.SplitN(contributor.DOAJName.Text, " ", 2)[1],
 			}
 		}
 
@@ -148,23 +148,23 @@ func GetOrCreateJournal(bodyData *BodyData, mapping map[string]PrefixAndAbbrevia
 
 	for i := range bodyData.Journals {
 		journal := bodyData.Journals[i]
-		if journal.FullTitle == record.DOAJJournalTitle.Text && 
-		   journal.Volume == record.DOAJVolume.Text &&
-		   journal.Issue == record.DOAJIssue.Text {
+		if journal.FullTitle == record.DOAJJournalTitle.Text &&
+			journal.Volume == record.DOAJVolume.Text &&
+			journal.Issue == record.DOAJIssue.Text {
 
 			return journal
-		}			
-	}	
+		}
+	}
 
 	journal := &Journal{
-		LanguageCode: ISO6392toISO6391(record.DOAJLanguage.Text),
-		FullTitle: record.DOAJJournalTitle.Text,
-		AbbrevTitle: mapping[record.DOAJJournalTitle.Text].Abbreviation,
-		ISSNs: CreateISSNs(record),
+		LanguageCode:     ISO6392toISO6391(record.DOAJLanguage.Text),
+		FullTitle:        record.DOAJJournalTitle.Text,
+		AbbrevTitle:      mapping[record.DOAJJournalTitle.Text].Abbreviation,
+		ISSNs:            CreateISSNs(record),
 		PublicationDates: CreatePublicationDates(record),
-		Volume: record.DOAJVolume.Text,
-		Issue: record.DOAJIssue.Text,
-		Articles: []Article{},
+		Volume:           record.DOAJVolume.Text,
+		Issue:            record.DOAJIssue.Text,
+		Articles:         []Article{},
 	}
 
 	bodyData.Journals = append(bodyData.Journals, journal)
@@ -178,14 +178,14 @@ func CreateISSNs(record *DOAJRecord) []ISSN {
 	}
 }
 
-func CreatePublicationDates(record *DOAJRecord) []PublicationDate{
+func CreatePublicationDates(record *DOAJRecord) []PublicationDate {
 
 	t, err := time.Parse("2006-01-02", record.DOAJPublicationDate.Text)
-	if err != nil{
+	if err != nil {
 		log.Fatalln("Unable to process date", err)
 	}
 
-	return  []PublicationDate{
+	return []PublicationDate{
 		PublicationDate{strconv.Itoa(t.Year()), strconv.Itoa(int(t.Month())), strconv.Itoa(t.Day()), "electronic"},
 	}
 }

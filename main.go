@@ -38,7 +38,7 @@ func main() {
 
 	templateData := CreateTemplateData(*depositorName, *depositorEmail, *registrant, mappingConfig, doajData)
 
-	t := template.Must(template.ParseFiles("crossrefOutput.tmpl"))
+	t := template.Must(template.ParseFiles("output.tmpl"))
 	err = t.Execute(os.Stdout, &templateData)
 	if err != nil {
 		log.Fatalln(err)

@@ -31,7 +31,7 @@ archive:
   - changelog*
   - CHANGELOG*
   - config.json
-  - *.tmpl
+  - output.tmpl
 fpm:
   bindir: /usr/local/bin
 snapshot:
