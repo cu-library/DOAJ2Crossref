@@ -4,8 +4,13 @@ package main
 
 import (
 	"encoding/xml"
+	"errors"
+	"log"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 // DOAJRecords is the root
@@ -181,4 +186,65 @@ func LoadDOAJ(xmlFilePath string) (*DOAJRecords, error) {
 	}
 
 	return records, nil
+}
+
+// Validate looks through a DOAJ struct to ensure no records would fail crossref validation.
+func (r *DOAJRecords) Validate() bool {
+
+	ok := true
+
+	for _, record := range r.DOAJRecords {
+		err := record.validate()
+		if err != nil {
+			log.Printf("\"%v\", URL: %v\n", record.DOAJTitle.Text, record.DOAJFullTextURL.Text)
+			log.Println(err)
+			ok = false
+		}
+	}
+
+	return ok
+}
+
+func (r *DOAJRecord) validate() error {
+
+	//Check if publication date is not empty and parse-able.
+	if strings.TrimSpace(r.DOAJPublicationDate.Text) == "" {
+		return errors.New("publication date is empty")
+	}
+	_, err := time.Parse("2006-01-02", r.DOAJPublicationDate.Text)
+	if err != nil {
+		return err
+	}
+
+	//Check if URL not empty and parse-able.
+	if strings.TrimSpace(r.DOAJFullTextURL.Text) == "" {
+		return errors.New("fulltext URL is empty")
+	}
+	_, err = url.Parse(r.DOAJFullTextURL.Text)
+	if err != nil {
+		return err
+	}
+
+	// Check if the record has no authors.
+	if len(r.DOAJAuthors.DOAJAuthor) == 0 {
+		return errors.New("no authors")
+	}
+
+	// Check if the record has no journal title.
+	if strings.TrimSpace(r.DOAJJournalTitle.Text) == "" {
+		return errors.New("journal title is empty")
+	}
+
+	// Check if the record has no volume.
+	if strings.TrimSpace(r.DOAJVolume.Text) == "" {
+		return errors.New("volume is empty")
+	}
+
+	// Check if the record has no issue.
+	if strings.TrimSpace(r.DOAJIssue.Text) == "" {
+		return errors.New("issue is empty")
+	}
+
+	return nil
+
 }

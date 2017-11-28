@@ -29,7 +29,7 @@ func main() {
 		log.Fatalln("registrant required")
 	}
 
-	mappingConfig, err := LoadMappingConfig(*configFilePath)
+	journalConfig, orcids, err := LoadConfig(*configFilePath)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -39,7 +39,11 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	templateData := CreateTemplateData(*depositorName, *depositorEmail, *registrant, mappingConfig, doajData)
+	if !doajData.Validate() {
+		log.Fatalln("DOAJ input data validation failed.")
+	}
+
+	templateData := CreateTemplateData(*depositorName, *depositorEmail, *registrant, journalConfig, orcids, doajData)
 
 	output, err := os.Create(*crossrefOutputFilePath)
 	if err != nil {

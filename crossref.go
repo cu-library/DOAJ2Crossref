@@ -3,15 +3,15 @@
 package main
 
 import (
+	"bytes"
+	"encoding/xml"
+	"fmt"
 	"log"
 	"net/url"
 	"path"
 	"strconv"
 	"strings"
 	"time"
-	"fmt"
-	"encoding/xml"
-	"bytes"
 )
 
 // TemplateData contains the data to use when creating the template
@@ -78,10 +78,13 @@ type Contributor struct {
 	Affiliation string
 	Sequence    string
 	Role        string
+	ORCID       string
 }
 
 // CreateTemplateData returns a pointer to a 'fully hydrated' TemplateData struct.
-func CreateTemplateData(depositorName, depositorEmail, registrant string, mapping map[string]PrefixAndAbbreviation, records *DOAJRecords) *TemplateData {
+func CreateTemplateData(depositorName, depositorEmail, registrant string,
+	mapping map[string]PrefixAndAbbreviation, orcids map[string]string,
+	records *DOAJRecords) *TemplateData {
 
 	templateData := new(TemplateData)
 
@@ -95,7 +98,7 @@ func CreateTemplateData(depositorName, depositorEmail, registrant string, mappin
 
 	for _, record := range records.DOAJRecords {
 		journal := GetOrCreateJournal(&templateData.BodyData, mapping, record)
-		journal.AddArticle(mapping, record)
+		journal.AddArticle(mapping, orcids, record)
 	}
 
 	return templateData
@@ -147,20 +150,20 @@ func CreatePublicationDates(record *DOAJRecord) []PublicationDate {
 
 	return []PublicationDate{
 		PublicationDate{
-			strconv.Itoa(t.Year()), 
-			fmt.Sprintf("%02d", int(t.Month())), 
-			fmt.Sprintf("%02d", t.Day()), 
+			strconv.Itoa(t.Year()),
+			fmt.Sprintf("%02d", int(t.Month())),
+			fmt.Sprintf("%02d", t.Day()),
 			"online",
 		},
 	}
 }
 
 // AddArticle adds an article's metadata from the record to a journal.
-func (j *Journal) AddArticle(mapping map[string]PrefixAndAbbreviation, record *DOAJRecord) {
+func (j *Journal) AddArticle(mapping map[string]PrefixAndAbbreviation, orcids map[string]string, record *DOAJRecord) {
 
 	fulltextURL, err := url.Parse(record.DOAJFullTextURL.Text)
 	if err != nil {
-		log.Fatalln("Unable to parse full text url", fulltextURL, err)
+		log.Fatalln("Unable to parse full text url", record.DOAJFullTextURL.Text, err)
 	}
 
 	prefix := mapping[j.FullTitle].Prefix
@@ -182,11 +185,11 @@ func (j *Journal) AddArticle(mapping map[string]PrefixAndAbbreviation, record *D
 		LastPage:         record.DOAJEndPage.Text,
 		DOI:              doi,
 		PublicationDates: j.PublicationDates,
-		Contributors:     CreateContributors(record),
+		Contributors:     CreateContributors(record, orcids),
 	})
 }
 
-func escapeXML(s string) string{
+func escapeXML(s string) string {
 	escaped := new(bytes.Buffer)
 	err := xml.EscapeText(escaped, []byte(s))
 	if err != nil {
@@ -196,7 +199,7 @@ func escapeXML(s string) string{
 }
 
 // CreateContributors creates a slice of contributors. Mononymous people only set the surname.
-func CreateContributors(record *DOAJRecord) []Contributor {
+func CreateContributors(record *DOAJRecord, orcids map[string]string) []Contributor {
 
 	idToAffiliation := make(map[int8]string)
 	contributors := []Contributor{}
@@ -228,6 +231,11 @@ func CreateContributors(record *DOAJRecord) []Contributor {
 			c.Sequence = "first"
 		} else {
 			c.Sequence = "additional"
+		}
+
+		orcid := orcids[contributor.DOAJName.Text]
+		if orcid != "" {
+			c.ORCID = "https://orcid.org/" + orcid
 		}
 
 		contributors = append(contributors, c)

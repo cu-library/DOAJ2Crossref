@@ -47,14 +47,12 @@ const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 					<title>{{.Title}}</title>
 				</titles>
 				<contributors>
-				{{- range .Contributors}}				
+				{{- range .Contributors}}
 					<person_name sequence="{{.Sequence}}" contributor_role="{{.Role}}">
-						{{- if .GivenName}}
-						<given_name>{{.GivenName}}</given_name>
-						{{end -}}
+{{- if .GivenName}}{{"\n"}}						<given_name>{{.GivenName}}</given_name>{{end}}
 						<surname>{{.Surname}}</surname>
-						{{- if .Affiliation}}
-						<affiliation>{{.Affiliation}}</affiliation>{{end}}						
+{{- if .Affiliation}}{{"\n"}}						<affiliation>{{.Affiliation}}</affiliation>{{end}}
+{{- if .ORCID}}{{"\n"}}						<ORCID>{{.ORCID}}</ORCID>{{end}}
 					</person_name>
 				{{- end}}
 				</contributors>
@@ -77,7 +75,7 @@ const templateSkeleton string = `<?xml version="1.0" encoding="UTF-8"?>
 			</journal_article>
 			{{- end}}
 		</journal>
-		{{- end}}		
+		{{- end}}/
 	</body>
 </doi_batch>
 `

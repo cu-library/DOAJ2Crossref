@@ -30,8 +30,6 @@ archive:
   - README*
   - changelog*
   - CHANGELOG*
-  - config.json
-  - output.tmpl
 fpm:
   bindir: /usr/local/bin
 snapshot:
