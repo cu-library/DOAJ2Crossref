@@ -33,16 +33,19 @@ ORCIDs are added to the Crossref XML output from mappings in the config.json fil
 * All publication dates are of type "online".
 * Every DOAJ record only has one ISSN, of type "electronic".
 * The DOI is generated like this:
-	```golang 
-	doi := prefix + path.Base(fulltextURL.Path)
-	```
-        For example:
-	```xml 
-	<fullTextUrl format="html">http://review.ca/a/long/path/99</fullTextUrl>
-	```
-	with prefix `10.11000/review`
-	would generate this DOI: 
-	`10.11000/review99`
+    ```golang 
+    doi := prefix + path.Base(fulltextURL.Path)
+    ```
+    
+    For example:
+	
+    ```xml 
+    <fullTextUrl format="html">http://review.ca/a/long/path/99</fullTextUrl>
+    ```
+	
+    with prefix `10.11000/review`
+    would generate this DOI: 
+    `10.11000/review99`
 * If the start page is empty in the input, a start page of 1 is assigned.
 * Mononymous people have their name mapped to crossref surname; given_name is left empty.
 * ORCIDs from config.json are always prefixed with `https://orcid.org/`
